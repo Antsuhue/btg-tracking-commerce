@@ -55,7 +55,11 @@
 
             fetch(url, {
                 method: "GET",
-                headers: { "accept": "application/json" },
+                headers: {
+                    "accept": "application/json",
+                    "credentials": "include",
+                    "Content-Type": "application/json"
+                },
                 credentials: "include"
             }).then(function (response) {
                 return response.json();
@@ -82,8 +86,9 @@
                 headers: {
                     "Content-Type": "application/json",
                     "Accept": "application/json",
-                    "TCS-Access-Token": tcsToken
+                    "TCS-Access-Token": tcsToken,
                 },
+                credentials: "include",
                 body: JSON.stringify({ query: graphQuery })
             }).then(function (response) {
                 if (!response.ok) {
@@ -106,8 +111,12 @@
         var endpointCart = "https://" + window.location.hostname + "/api/carrinho";
         return fetch(endpointCart, {
             method: "GET",
-            headers: { "accept": "application/json" },
+            headers: { 
+                "accept": "application/json",
+                "Content-Type": "application/json"
+            },
             credentials: "include"
+
         }).then(function (res) {
             return res.json();
         });
@@ -117,7 +126,10 @@
         var endpointCart = "https://" + window.location.hostname + "/api/carrinho";
         return fetch(endpointCart, {
             method: "GET",
-            headers: { "accept": "application/json" },
+            headers: { 
+                "accept": "application/json",
+                "Content-Type": "application/json"
+            },
             credentials: "include"
         }).then(function (res) {
             return res.json();
