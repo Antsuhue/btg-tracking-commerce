@@ -111,7 +111,7 @@
         var endpointCart = "https://" + window.location.hostname + "/api/carrinho";
         return fetch(endpointCart, {
             method: "GET",
-            headers: { 
+            headers: {
                 "accept": "application/json",
                 "Content-Type": "application/json"
             },
@@ -126,7 +126,7 @@
         var endpointCart = "https://" + window.location.hostname + "/api/carrinho";
         return fetch(endpointCart, {
             method: "GET",
-            headers: { 
+            headers: {
                 "accept": "application/json",
                 "Content-Type": "application/json"
             },
