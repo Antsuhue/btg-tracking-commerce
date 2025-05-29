@@ -56,9 +56,7 @@
             fetch(url, {
                 method: "GET",
                 headers: {
-                    "accept": "application/json",
-                    "credentials": "include",
-                    "Content-Type": "application/json"
+                    "accept": "application/json"
                 },
                 credentials: "include"
             }).then(function (response) {
@@ -84,8 +82,7 @@
             fetch(endpointProduct, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
+                    "accept": "application/json",
                     "TCS-Access-Token": tcsToken,
                 },
                 credentials: "include",
@@ -112,8 +109,7 @@
         return fetch(endpointCart, {
             method: "GET",
             headers: {
-                "accept": "application/json",
-                "Content-Type": "application/json"
+                "accept": "application/json"
             },
             credentials: "include"
 
@@ -127,8 +123,7 @@
         return fetch(endpointCart, {
             method: "GET",
             headers: {
-                "accept": "application/json",
-                "Content-Type": "application/json"
+                "accept": "application/json"
             },
             credentials: "include"
         }).then(function (res) {
