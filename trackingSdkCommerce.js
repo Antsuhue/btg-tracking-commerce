@@ -82,10 +82,10 @@
             fetch(endpointProduct, {
                 method: "POST",
                 headers: {
-                    "accept": "application/json",
+                    "Accept": "application/json",
                     "TCS-Access-Token": tcsToken,
+                    "Content-Type": "application/json"
                 },
-                credentials: "include",
                 body: JSON.stringify({ query: graphQuery })
             }).then(function (response) {
                 if (!response.ok) {
@@ -123,7 +123,7 @@
         return fetch(endpointCart, {
             method: "GET",
             headers: {
-                "accept": "application/json"
+                "accept": "application/json",
             },
             credentials: "include"
         }).then(function (res) {
