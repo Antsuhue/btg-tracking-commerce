@@ -2,43 +2,34 @@
     var endpointProduct = "https://storefront-api.fbits.net/graphql";
 
     function BtgSend(btgId, event, data, categories, pedido) {
-        var sendData;
+        var params = new URLSearchParams();
+        params.append("account", btgId);
+        params.append("event", event);
+        params.append("domain", window.location.hostname);
 
         if (event === "email" || event === "client") {
-            sendData = [{ email: data }];
+            params.append("email", data);
         } else if (event === "cart" || event === "product") {
-            sendData = [{
-                id: data.productId,
-                name: data.productName,
-                price: data.prices.priceTables[0].price,
-                department: categories.productCategories[0]?.name || "",
-                category: categories.productCategories[1]?.name || "",
-                subCategory: categories.productCategories[2]?.name || "",
-                brand: data.productBrand.name
-            }];
+            params.append("id", data.productId);
+            params.append("name", data.productName);
+            params.append("price", data.prices.priceTables[0].price);
+            params.append("department", categories.productCategories[0]?.name || "");
+            params.append("category", categories.productCategories[1]?.name || "");
+            params.append("subCategory", categories.productCategories[2]?.name || "");
+            params.append("brand", data.productBrand.name);
         } else if (event === "transaction") {
-            sendData = [{
-                transactionId: pedido.pedidoInfo.Id,
-                id: data.productId,
-                name: data.productName,
-                price: data.prices.priceTables[0].price,
-                department: categories.productCategories[0]?.name || "",
-                category: categories.productCategories[1]?.name || "",
-                subCategory: categories.productCategories[2]?.name || "",
-                brand: data.productBrand.name
-            }];
+            params.append("transactionId", pedido.pedidoInfo.Id);
+            params.append("id", data.productId);
+            params.append("name", data.productName);
+            params.append("price", data.prices.priceTables[0].price);
+            params.append("department", categories.productCategories[0]?.name || "");
+            params.append("category", categories.productCategories[1]?.name || "");
+            params.append("subCategory", categories.productCategories[2]?.name || "");
+            params.append("brand", data.productBrand.name);
         }
 
-        if (sendData) {
-            Btg360.add({
-                account: btgId,
-                event: event,
-                domain: window.location.hostname,
-                items: sendData
-            });
-        } else {
-            console.warn("BtgSend: evento não reconhecido ou dados incompletos", event);
-        }
+        var img = new Image();
+        img.src = "https://c.btg360.com.br/track.gif?" + params.toString();
     }
 
     function getClient() {
@@ -109,7 +100,7 @@
         return fetch(endpointCart, {
             method: "GET",
             headers: {
-                "accept": "application/json"
+                "accept": "application/json",
             },
             credentials: "include"
 
