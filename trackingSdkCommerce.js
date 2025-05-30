@@ -11,31 +11,34 @@
                 id: data.productId,
                 name: data.productName,
                 price: data.prices.priceTables[0].price,
-                department: categories.productCategories[0]?.name || "",
-                category: categories.productCategories[1]?.name || "",
-                subCategory: categories.productCategories[2]?.name || "",
+                department: categories?.productCategories?.[0]?.name || "",
+                category: categories?.productCategories?.[1]?.name || "",
+                subCategory: categories?.productCategories?.[2]?.name || "",
                 brand: data.productBrand.name
             }];
         } else if (event === "transaction") {
             sendData = [{
-                transactionId: pedido.pedidoInfo.Id,
+                transactionId: pedido?.pedidoInfo?.Id,
                 id: data.productId,
                 name: data.productName,
                 price: data.prices.priceTables[0].price,
-                department: categories.productCategories[0]?.name || "",
-                category: categories.productCategories[1]?.name || "",
-                subCategory: categories.productCategories[2]?.name || "",
+                department: categories?.productCategories?.[0]?.name || "",
+                category: categories?.productCategories?.[1]?.name || "",
+                subCategory: categories?.productCategories?.[2]?.name || "",
                 brand: data.productBrand.name
             }];
         }
 
         if (sendData) {
-            Btg360.add({
-                account: btgId,
-                event: event,
-                domain: window.location.hostname,
-                items: sendData
-            });
+            var payload = encodeURIComponent(JSON.stringify(sendData));
+            var trackingUrl = `https://btg-tracking-commerce.vercel.app/track.gif` +
+                              `?account=${encodeURIComponent(btgId)}` +
+                              `&event=${encodeURIComponent(event)}` +
+                              `&domain=${encodeURIComponent(window.location.hostname)}` +
+                              `&items=${payload}`;
+
+            var img = new Image();
+            img.src = trackingUrl;
         } else {
             console.warn("BtgSend: evento não reconhecido ou dados incompletos", event);
         }
@@ -112,7 +115,6 @@
                 "accept": "application/json"
             },
             credentials: "include"
-
         }).then(function (res) {
             return res.json();
         });
