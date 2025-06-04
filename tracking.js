@@ -11,10 +11,10 @@
     var _hasVitrine = false;
     var _events = {
         product: function (items) {
-            generateProductImage(items);
+            generateProductCartImage(items);
         },
         cart: function (items) {
-            generateCartImage(items);
+            generateProductCartImage(items);
         },
         client: function (items) {
             generateClientImage(items);
@@ -164,7 +164,7 @@
         var image = new Image(1, 1);
         image.src = url + "?" + parameters;
     }
-    
+
     function generateUsid() {
         var data = getQueryStringArray();
         if (validateItem(data["btg_source"])) {
@@ -201,18 +201,6 @@
         var utmsCookie = getCookie("__btgUtms");
         return utmsCookie ? utmsCookie : "";
     }
-    function generateClientImage(items) {
-        if (typeof items[0] === "undefined") {
-          return false;
-        }
-    }
-    function generateModuleCookie() {
-        var data = getQueryStringArray(),
-            moduleId = validateItem(data["btg_module"]);
-        if (moduleId) {
-            setCookie("__btgModule", moduleId, 1);
-        }
-    }
     function getParameters(account) {
         var parameters = "btgId=" + account;
         parameters += "&cookieBid=" + _cookieBid;
@@ -220,6 +208,29 @@
         parameters += "&rand=" + getRand(true);
         parameters += getUtmsCookie();
         return parameters;
+    }
+    function generateClientImage(items) {
+        if (typeof items[0] === "undefined") {
+            return false;
+        }
+    }
+
+
+    function generateProductCartImage(items) {
+        var stdParameters = getParameters(),
+            parameters,
+            total = items.length;
+        if (total <= 0) {
+            throw { message: "BTG360 Info - Cart image was not generated." };
+        }
+    }
+
+    function generateModuleCookie() {
+        var data = getQueryStringArray(),
+            moduleId = validateItem(data["btg_module"]);
+        if (moduleId) {
+            setCookie("__btgModule", moduleId, 1);
+        }
     }
     function generateModuleImage(moduleId, items) {
         if (moduleId) {
@@ -234,45 +245,44 @@
         generateUsid();
         generateUtmsCookie();
         generateModuleCookie();
-      }
-      function execute(options) {
+    }
+    function execute(options) {
         if (options.account) {
-          _account = options.account;
-          _cookieBid = getCookieBid();
-          internalProcess();
-          if (typeof _events[options.event] === "function") {
-            _events[options.event](options.items);
-          } else {
-            throw { message: "BTG360 Info - Event not defined or invalid." };
-          }
+            _account = options.account;
+            _cookieBid = getCookieBid();
+            internalProcess();
+            if (typeof _events[options.event] === "function") {
+                _events[options.event](options.items);
+            } else {
+                throw { message: "BTG360 Info - Event not defined or invalid." };
+            }
         } else {
-          throw { message: "BTG360 Info - Account unknown." };
+            throw { message: "BTG360 Info - Account unknown." };
         }
-      }
+    }
 
     function BtgSend(btgId, event, data, categories, pedido) {
         var sendData;
         console.log(data);
 
         if (event === "email" || event === "client") {
-            console.log(_cookieBid);
             if (typeof data[0] === "undefined") {
                 return false;
-              }
-              if (
+            }
+            if (
                 typeof data[0].email === "string" ||
                 typeof data[0].token === "string"
-              ) {
+            ) {
                 var stdParameters = getParameters(btgId),
-                  parameters,
-                  usid = validateItem(data[0].usid);
+                    parameters,
+                    usid = validateItem(data[0].usid);
                 if (usid) {
-                  parameters += "&usid=" + usid;
-                  data[0].email = "";
+                    parameters += "&usid=" + usid;
+                    data[0].email = "";
                 }
-                
+
                 var isOptin =
-                  typeof data[0].isOptin !== "undefined" ? data[0].isOptin : true;
+                    typeof data[0].isOptin !== "undefined" ? data[0].isOptin : true;
                 parameters += "&email=" + validateItem(data[0].email);
                 parameters += "&facebookId=" + validateItem(data[0].facebookId);
                 parameters += "&webPushId=" + validateItem(data[0].webPushId);
@@ -283,33 +293,61 @@
                 createImage(generateUrl("c", "__client.gif"), stdParameters + parameters);
                 execute({
                     account: btgId,
-                    event: "client",
+                    event: event,
                     items: data
                 });
-              }
             }
-        else if (event === "cart" || event === "product") {
-            sendData = [{
-                id: data.productId,
-                name: data.productName,
-                price: data.prices.priceTables[0].price,
-                department: categories.productCategories[0]?.name || "",
-                category: categories.productCategories[1]?.name || "",
-                subCategory: categories.productCategories[2]?.name || "",
-                brand: data.productBrand.name
-            }];
-        } else if (event === "transaction") {
-            sendData = [{
-                transactionId: pedido.pedidoInfo.Id,
-                id: data.productId,
-                name: data.productName,
-                price: data.prices.priceTables[0].price,
-                department: categories.productCategories[0]?.name || "",
-                category: categories.productCategories[1]?.name || "",
-                subCategory: categories.productCategories[2]?.name || "",
-                brand: data.productBrand.name
-            }];
         }
+        else if (event === "cart" || event === "product") {
+            console.log(categories);
+            var stdParameters = getParameters(btgId),
+                parameters,
+                total = data.length;
+            if (total <= 0) {
+                throw { message: "BTG360 Info - " + event + " image was not generated." };
+            }
+            console.log(data);
+            parameters = "&email=" + validateItem(data.email);
+            parameters += "&id=" + validateItem(data.productId);
+            parameters += "&name=" + validateItem(data.productName);
+            parameters += "&price=" + toPrice(data.prices.priceTables[0].price);
+            parameters += "&department=" + validateItem(categories.productCategories[0]?.name || "");
+            parameters += "&category=" + validateItem(categories.productCategories[1]?.name || "");
+            parameters += "&subcategory=" + validateItem(categories.productCategories[2]?.name || "");
+            parameters += "&brand=" + validateItem(data.productBrand.name);
+            createImage(generateUrl("c", "__" + event + ".gif"), stdParameters + parameters);
+            execute({
+                account: btgId,
+                event: event,
+                items: data
+            });
+        } else if (event === "transaction") {
+            var stdParameters = getParameters(btgId),
+                parameters,
+                total = items.length,
+                moduleId = getCookie("__btgModule");
+            if (total <= 0) {
+                throw { message: "BTG360 Info - Transaction image was not generated." };
+            }
+            var price = toPrice(data.prices.priceTables[0].price);
+            parameters = "&email=" + validateItem(data.email);
+            parameters += "&transactionId=" + validateItem(pedido.pedidoInfo.Id);
+            parameters += "&id=" + validateItem(data.productId);
+            parameters += "&name=" + validateItem(data.productName);
+            parameters += "&price=" + price;
+            parameters += "&department=" + validateItem(data.department);
+            parameters += "&category=" + validateItem(data.category);
+            parameters += "&subcategory=" + validateItem(data.subcategory);
+            parameters += "&brand=" + validateItem(data.productBrand.name);
+            parameters += parameterHasVitrine;
+            createImage(generateUrl("c", "__order.gif"), stdParameters + parameters);
+            generateModuleImage(moduleId, data);
+        }
+        execute({
+            account: btgId,
+            event: event,
+            items: data
+        });
     }
 
     function getClient() {
@@ -410,7 +448,7 @@
     this.start = function (btgId, tcsToken) {
         _cookieBid = getCookieBid();
         getClient().then(function (data) {
-            var btgData = [{email: data?.Email || ""}];
+            var btgData = [{ email: data?.Email || "" }];
             BtgSend(btgId, "client", btgData, null, null);
         }).catch(function (error) {
             console.error("Erro ao buscar cliente:", error);
@@ -434,11 +472,14 @@
                     console.error("Erro ao buscar produtos do carrinho:", error);
                 });
             } else if (path === "/Confirmacao") {
+
                 console.log("Página de Transação");
                 getTransactionProducts().then(function (data) {
                     data.produtos.forEach(function (item) {
                         getProduct(item.ProdutoId, tcsToken).then(function (produto) {
                             BtgSend(btgId, "transaction", produto, { productCategories: produto.productCategories }, { pedidoInfo: data.pedidoInfo });
+                            removeCookie("__btgModule");
+                            removeCookie("__btgUtms");
                         }).catch(function (error) {
                             console.error("Erro ao buscar produto na transação:", error);
                         });
