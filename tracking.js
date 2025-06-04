@@ -408,6 +408,7 @@
     }
 
     this.start = function (btgId, tcsToken) {
+        _cookieBid = getCookieBid();
         getClient().then(function (data) {
             var btgData = [{email: data?.Email || ""}];
             BtgSend(btgId, "client", btgData, null, null);
