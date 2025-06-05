@@ -118,8 +118,13 @@
         }
         return response;
     }
-    function validateEvent(event) {
-        return typeof event === "string" ? event.toLowerCase() : null;
+    function validateTcsToken(tcsToken) {
+        var response = false,
+            regEx = /^tcs_[a-z0-9]+_[a-f0-9]{32}$/g;
+        if (typeof tcsToken === "string" && regEx.test(tcsToken)) {
+            response = tcsToken;
+        }
+        return response;
     }
     function validateItem(item) {
         var blackList = ["undefined", "null"];
@@ -244,9 +249,9 @@
             parameters += "&id=" + validateItem(items.productId);
             parameters += "&name=" + validateItem(items.productName);
             parameters += "&price=" + toPrice(items.prices.priceTables[0].price);
-            parameters += "&department=" + validateItem(categories.productCategories[0]?.name || "");
-            parameters += "&category=" + validateItem(categories.productCategories[1]?.name || "");
-            parameters += "&subcategory=" + validateItem(categories.productCategories[2]?.name || "");
+            parameters += "&department=" + validateItem(categories[0]?.name || "");
+            parameters += "&category=" + validateItem(categories[1]?.name || "");
+            parameters += "&subcategory=" + validateItem(categories[2]?.name || "");
             parameters += "&brand=" + validateItem(items.productBrand.name);
             createImage(
                 generateUrl("c", "__" + event + ".gif"),
@@ -270,20 +275,34 @@
         }
         var price = toPrice(items.prices.priceTables[0].price);
         parameters = "&email=" + validateItem(items.email);
-        parameters += "&transactionId=" + validateItem(pedido.transactionId);
-        parameters += "&id=" + validateItem(items.id);
-        parameters += "&name=" + validateItem(items.name);
+        parameters += "&transactionId=" + validateItem(pedido);
+        parameters += "&id=" + validateItem(items.productId);
+        parameters += "&name=" + validateItem(items.productName);
         parameters += "&price=" + price;
-        parameters += "&department=" + validateItem(categories.productCategories[0]?.name || "");
-        parameters += "&category=" + validateItem(categories.productCategories[1]?.name || "");
-        parameters += "&subcategory=" + validateItem(categories.productCategories[2]?.name || "");
+        parameters += "&department=" + validateItem(categories[0]?.name || "");
+        parameters += "&category=" + validateItem(categories[1]?.name || "");
+        parameters += "&subcategory=" + validateItem(categories[2]?.name || "");
         parameters += "&brand=" + validateItem(items.productBrand.name);
         createImage(generateUrl("c", "__order.gif"), stdParameters + parameters);
         generateModuleImage(moduleId, items);
     }
 
+    function generateSearchImage(items, btgId) {
+        if (typeof items[0] === "object") {
+          var parameters = getParameters(btgId),
+            keyword = validateItem(items[0].keyword);
+          var minSizeChar =
+            items[0].minSizeChar !== undefined ? parseInt(items[0].minSizeChar) : 2;
+          if (keyword.length >= minSizeChar) {
+            parameters += "&keyword=" + keyword;
+            createImage(generateUrl("c", "__search.gif"), parameters);
+          }
+        } else {
+          throw { message: "BTG360 Info - Search image was not generated." };
+        }
+      }
+
     function generateWishlistImage(items, btgId) {
-        console.log("wishlist chegou");
         if (typeof items[0] === "object") {
             var parameters = getParameters(btgId);
             var active =
@@ -352,51 +371,25 @@
     }
 
     function BtgSend(btgId, event, data, categories, pedido) {
-        var sendData;
-        console.log(data);
 
         if (event === "email" || event === "client") {
             generateClientImage(data, btgId);
         }
         else if (event === "cart" || event === "product") {
-            console.log(categories);
             var stdParameters = getParameters(btgId),
                 parameters,
                 total = data.length;
             if (total <= 0) {
                 throw { message: "BTG360 Info - " + event + " image was not generated." };
             }
-            console.log(data);
             generateCartAndProductImage(data, categories, btgId, event);
 
         } else if (event === "transaction") {
-            var stdParameters = getParameters(btgId),
-                parameters,
-                total = items.length,
-                moduleId = getCookie("__btgModule");
-            if (total <= 0) {
-                throw { message: "BTG360 Info - Transaction image was not generated." };
-            }
+            console.log("chegou aqui 2");
             generateTransactionImage(data, btgId, categories, pedido);
 
         } else if (event === "search") {
-            if (typeof data[0] === "object") {
-                var parameters = getParameters(btgId),
-                    keyword = validateItem(data[0].keyword);
-                var minSizeChar =
-                    data[0].minSizeChar !== undefined ? parseInt(data[0].minSizeChar) : 2;
-                if (keyword.length >= minSizeChar) {
-                    parameters += "&keyword=" + keyword;
-                    createImage(generateUrl("c", "__search.gif"), parameters);
-                    execute({
-                        account: btgId,
-                        event: event,
-                        items: data
-                    });
-                }
-            } else {
-                throw { message: "BTG360 Info - Search image was not generated." };
-            }
+            generateSearchImage(data, btgId)
         }
 
 
@@ -479,7 +472,9 @@
         });
     }
 
-    function getTransactionProducts() {
+    // TODO: Utilização de API do pedido mas deixou de funcionar.
+
+    /* function getTransactionProducts() {
         var endpointCart = "https://" + window.location.hostname + "/api/carrinho";
         return fetch(endpointCart, {
             method: "GET",
@@ -495,10 +490,21 @@
                 pedidoInfo: data.Pedidos
             };
         });
-    }
+    } */
 
     this.start = function (btgId, tcsToken) {
-        _cookieBid = getCookieBid();
+        _account = validateAccount(btgId);
+        if (_account) {
+            _cookieBid = getCookieBid();
+            internalProcess();
+          } else {
+            throw { message: "BTG360 Info - Account unknown." };
+          }
+        var tcsToken = validateTcsToken(tcsToken);
+        if (!tcsToken) {
+            throw { message: "BTG360 Info - TCS token invalid." };
+        }
+
         getClient().then(function (data) {
             var btgData = [{ email: data?.Email || "" }];
             BtgSend(btgId, "client", btgData, null, null);
@@ -511,11 +517,11 @@
 
         if (host.indexOf("checkout") !== -1) {
             if (path === "/") {
-                console.log("Página de Carrinho");
                 getCartProducts().then(function (data) {
                     data.Produtos.forEach(function (item) {
                         getProduct(item.ProdutoId, tcsToken).then(function (produto) {
-                            BtgSend(btgId, "cart", produto, { productCategories: produto.productCategories }, null);
+                            var categories = produto.productCategories;
+                            BtgSend(btgId, "cart", produto, categories, null);
                         }).catch(function (error) {
                             console.error("Erro ao buscar produto no carrinho:", error);
                         });
@@ -524,21 +530,21 @@
                     console.error("Erro ao buscar produtos do carrinho:", error);
                 });
             } else if (path === "/Confirmacao") {
-
-                console.log("Página de Transação");
-                getTransactionProducts().then(function (data) {
-                    data.produtos.forEach(function (item) {
+                    var cartDetails = Fbits.Carrinho
+                    var pedidoId = cartDetails.PedidoId;
+                    var produtos = cartDetails.Produtos;
+                    produtos.map(function (item) {
+                        console.log("item:", item);
                         getProduct(item.ProdutoId, tcsToken).then(function (produto) {
-                            BtgSend(btgId, "transaction", produto, { productCategories: produto.productCategories }, { pedidoInfo: data.pedidoInfo });
+                            var categories = produto.productCategories;
+                            BtgSend(btgId, "transaction", produto, categories, pedidoId);
+                            console.log("chegou aqui 6");
                             removeCookie("__btgModule");
                             removeCookie("__btgUtms");
                         }).catch(function (error) {
                             console.error("Erro ao buscar produto na transação:", error);
                         });
                     });
-                }).catch(function (error) {
-                    console.error("Erro ao buscar dados da transação:", error);
-                });
             }
         }
 
