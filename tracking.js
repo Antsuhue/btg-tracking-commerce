@@ -11,10 +11,10 @@
     var _hasVitrine = false;
     var _events = {
         product: function (items) {
-            generateProductCartImage(items);
+            generateCartAndProductImage(items);
         },
         cart: function (items) {
-            generateProductCartImage(items);
+            generateCartAndProductImage(items);
         },
         client: function (items) {
             generateClientImage(items);
@@ -209,19 +209,109 @@
         parameters += getUtmsCookie();
         return parameters;
     }
-    function generateClientImage(items) {
+    function generateClientImage(items, btgId) {
         if (typeof items[0] === "undefined") {
             return false;
         }
+        if (
+            typeof items[0].email === "string" ||
+            typeof items[0].token === "string"
+        ) {
+            var stdParameters = getParameters(btgId),
+                parameters,
+                usid = validateItem(items[0].usid);
+            if (usid) {
+                parameters += "&usid=" + usid;
+                items[0].email = "";
+            }
+            var isOptin =
+                typeof items[0].isOptin !== "undefined" ? items[0].isOptin : true;
+            parameters += "&email=" + validateItem(items[0].email);
+            parameters += "&facebookId=" + validateItem(items[0].facebookId);
+            parameters += "&webPushId=" + validateItem(items[0].webPushId);
+            parameters += "&phone=" + validateItem(items[0].phone);
+            parameters += "&token=" + validateItem(items[0].token);
+            parameters += "&encrypt=" + validateItem(items[0].encrypt);
+            parameters += "&isOptin=" + isOptin;
+            createImage(generateUrl("c", "__client.gif"), stdParameters + parameters);
+        }
     }
 
+    function generateCartAndProductImage(items, categories, btgId, event) {
+        if (typeof items === "object") {
+            var stdParameters = getParameters(btgId);
+            var parameters = "&email=" + validateItem(items.email);
+            parameters += "&id=" + validateItem(items.productId);
+            parameters += "&name=" + validateItem(items.productName);
+            parameters += "&price=" + toPrice(items.prices.priceTables[0].price);
+            parameters += "&department=" + validateItem(categories.productCategories[0]?.name || "");
+            parameters += "&category=" + validateItem(categories.productCategories[1]?.name || "");
+            parameters += "&subcategory=" + validateItem(categories.productCategories[2]?.name || "");
+            parameters += "&brand=" + validateItem(items.productBrand.name);
+            createImage(
+                generateUrl("c", "__" + event + ".gif"),
+                stdParameters + parameters,
+            );
+            if (event === "product") {
+                removeCookie("btg_lastprod");
+            }
+        } else {
+            throw { message: "BTG360 Info - " + event + " image was not generated." };
+        }
+    }
 
-    function generateProductCartImage(items) {
-        var stdParameters = getParameters(),
+    function generateTransactionImage(items, btgId, categories, pedido) {
+        var stdParameters = getParameters(btgId),
             parameters,
-            total = items.length;
+            total = items.length,
+            moduleId = getCookie("__btgModule");
         if (total <= 0) {
-            throw { message: "BTG360 Info - Cart image was not generated." };
+            throw { message: "BTG360 Info - Transaction image was not generated." };
+        }
+        var price = toPrice(items.prices.priceTables[0].price);
+        parameters = "&email=" + validateItem(items.email);
+        parameters += "&transactionId=" + validateItem(pedido.transactionId);
+        parameters += "&id=" + validateItem(items.id);
+        parameters += "&name=" + validateItem(items.name);
+        parameters += "&price=" + price;
+        parameters += "&department=" + validateItem(categories.productCategories[0]?.name || "");
+        parameters += "&category=" + validateItem(categories.productCategories[1]?.name || "");
+        parameters += "&subcategory=" + validateItem(categories.productCategories[2]?.name || "");
+        parameters += "&brand=" + validateItem(items.productBrand.name);
+        createImage(generateUrl("c", "__order.gif"), stdParameters + parameters);
+        generateModuleImage(moduleId, items);
+    }
+
+    function generateWishlistImage(items, btgId) {
+        console.log("wishlist chegou");
+        if (typeof items[0] === "object") {
+            var parameters = getParameters(btgId);
+            var active =
+                typeof items[0].active !== "undefined" &&
+                    (items[0].active || parseInt(items[0].active))
+                    ? 1
+                    : 0;
+            parameters += "&productId=" + validateItem(items[0].productId);
+            parameters += "&active=" + active;
+            createImage(generateUrl("c", "__wishlist.gif"), parameters);
+        } else {
+            throw { message: "BTG360 Info - Wishlist image was not generated." };
+        }
+    }
+
+    function generateWarnMeImage(items, btgId) {
+        if (typeof items[0] === "object") {
+            var parameters = getParameters(btgId);
+            var active =
+                typeof items[0].active !== "undefined" &&
+                    (items[0].active || parseInt(items[0].active))
+                    ? 1
+                    : 0;
+            parameters += "&productId=" + validateItem(items[0].productId);
+            parameters += "&active=" + active;
+            createImage(generateUrl("c", "__warnme.gif"), parameters);
+        } else {
+            throw { message: "BTG360 Info - Warnme image was not generated." };
         }
     }
 
@@ -266,37 +356,7 @@
         console.log(data);
 
         if (event === "email" || event === "client") {
-            if (typeof data[0] === "undefined") {
-                return false;
-            }
-            if (
-                typeof data[0].email === "string" ||
-                typeof data[0].token === "string"
-            ) {
-                var stdParameters = getParameters(btgId),
-                    parameters,
-                    usid = validateItem(data[0].usid);
-                if (usid) {
-                    parameters += "&usid=" + usid;
-                    data[0].email = "";
-                }
-
-                var isOptin =
-                    typeof data[0].isOptin !== "undefined" ? data[0].isOptin : true;
-                parameters += "&email=" + validateItem(data[0].email);
-                parameters += "&facebookId=" + validateItem(data[0].facebookId);
-                parameters += "&webPushId=" + validateItem(data[0].webPushId);
-                parameters += "&phone=" + validateItem(data[0].phone);
-                parameters += "&token=" + validateItem(data[0].token);
-                parameters += "&encrypt=" + validateItem(data[0].encrypt);
-                parameters += "&isOptin=" + isOptin;
-                createImage(generateUrl("c", "__client.gif"), stdParameters + parameters);
-                execute({
-                    account: btgId,
-                    event: event,
-                    items: data
-                });
-            }
+            generateClientImage(data, btgId);
         }
         else if (event === "cart" || event === "product") {
             console.log(categories);
@@ -307,20 +367,8 @@
                 throw { message: "BTG360 Info - " + event + " image was not generated." };
             }
             console.log(data);
-            parameters = "&email=" + validateItem(data.email);
-            parameters += "&id=" + validateItem(data.productId);
-            parameters += "&name=" + validateItem(data.productName);
-            parameters += "&price=" + toPrice(data.prices.priceTables[0].price);
-            parameters += "&department=" + validateItem(categories.productCategories[0]?.name || "");
-            parameters += "&category=" + validateItem(categories.productCategories[1]?.name || "");
-            parameters += "&subcategory=" + validateItem(categories.productCategories[2]?.name || "");
-            parameters += "&brand=" + validateItem(data.productBrand.name);
-            createImage(generateUrl("c", "__" + event + ".gif"), stdParameters + parameters);
-            execute({
-                account: btgId,
-                event: event,
-                items: data
-            });
+            generateCartAndProductImage(data, categories, btgId, event);
+
         } else if (event === "transaction") {
             var stdParameters = getParameters(btgId),
                 parameters,
@@ -329,25 +377,29 @@
             if (total <= 0) {
                 throw { message: "BTG360 Info - Transaction image was not generated." };
             }
-            var price = toPrice(data.prices.priceTables[0].price);
-            parameters = "&email=" + validateItem(data.email);
-            parameters += "&transactionId=" + validateItem(pedido.pedidoInfo.Id);
-            parameters += "&id=" + validateItem(data.productId);
-            parameters += "&name=" + validateItem(data.productName);
-            parameters += "&price=" + price;
-            parameters += "&department=" + validateItem(data.department);
-            parameters += "&category=" + validateItem(data.category);
-            parameters += "&subcategory=" + validateItem(data.subcategory);
-            parameters += "&brand=" + validateItem(data.productBrand.name);
-            parameters += parameterHasVitrine;
-            createImage(generateUrl("c", "__order.gif"), stdParameters + parameters);
-            generateModuleImage(moduleId, data);
+            generateTransactionImage(data, btgId, categories, pedido);
+
+        } else if (event === "search") {
+            if (typeof data[0] === "object") {
+                var parameters = getParameters(btgId),
+                    keyword = validateItem(data[0].keyword);
+                var minSizeChar =
+                    data[0].minSizeChar !== undefined ? parseInt(data[0].minSizeChar) : 2;
+                if (keyword.length >= minSizeChar) {
+                    parameters += "&keyword=" + keyword;
+                    createImage(generateUrl("c", "__search.gif"), parameters);
+                    execute({
+                        account: btgId,
+                        event: event,
+                        items: data
+                    });
+                }
+            } else {
+                throw { message: "BTG360 Info - Search image was not generated." };
+            }
         }
-        execute({
-            account: btgId,
-            event: event,
-            items: data
-        });
+
+
     }
 
     function getClient() {
@@ -496,9 +548,36 @@
 
             getProduct(productId, tcsToken).then(function (produto) {
                 BtgSend(btgId, "product", produto, { productCategories: produto.productCategories }, null);
+
+                if (typeof wishlistAddClick === "function") {
+                    var originalWishlistAddClick = wishlistAddClick;
+                    window.wishlistAddClick = function (...args) {
+                        const result = originalWishlistAddClick.apply(this, args);
+                        generateWishlistImage([{ productId: produto.productId, active: true }], btgId);
+
+                        return result;
+                    };
+                }
+
+                if (typeof backInStockOnClick === "function") {
+                    var originalBackInStockOnClick = backInStockOnClick;
+                    window.backInStockOnClick = function (...args) {
+                        const result2 = originalBackInStockOnClick.apply(this, args);
+                        generateWarnMeImage([{ productId: produto.productId, active: true }], btgId);
+
+                        return result2;
+                    };
+                }
             }).catch(function (error) {
                 console.error("Erro ao obter produto:", error);
             });
+        }
+
+        if (path.indexOf("/busca") !== -1) {
+            var search = window.location.search;
+            var params = new URLSearchParams(search);
+            var searchTerm = params.get("busca");
+            BtgSend(btgId, "search", [{ keyword: searchTerm }], null, null);
         }
     };
 
