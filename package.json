@@ -1,0 +1,44 @@
+{
+  "name": "btg-tracking-sdk",
+  "version": "2.0.0",
+  "description": "BTG Tracking SDK otimizado para performance",
+  "main": "btgTracking.js",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "build:prod": "webpack --config webpack.prod.config.js",
+    "build:analyze": "webpack-bundle-analyzer dist/stats.json",
+    "build:stats": "webpack --config webpack.prod.config.js --json > dist/stats.json",
+    "dev": "webpack --config webpack.config.js --watch",
+    "clean": "rm -rf dist",
+    "test:size": "npm run build:prod && ls -lah dist/",
+    "performance": "npm run build:stats && npm run build:analyze"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/plugin-proposal-class-properties": "^7.18.0",
+    "@babel/plugin-syntax-dynamic-import": "^7.8.0",
+    "@babel/preset-env": "^7.22.0",
+    "babel-loader": "^9.1.0",
+    "babel-plugin-transform-remove-console": "^6.9.4",
+    "compression-webpack-plugin": "^10.0.0",
+    "core-js": "^3.31.0",
+    "terser-webpack-plugin": "^5.3.0",
+    "webpack": "^5.88.0",
+    "webpack-bundle-analyzer": "^4.9.0",
+    "webpack-cli": "^5.1.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "keywords": [
+    "tracking",
+    "analytics",
+    "btg",
+    "performance",
+    "optimized"
+  ],
+  "author": "BTG Team",
+  "license": "MIT"
+}

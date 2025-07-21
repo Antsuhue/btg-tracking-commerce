@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Integração - SDK no Navegador</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { border: 1px solid #ccc; margin: 20px 0; padding: 15px; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste de Integração da SDK no Navegador</h1>
+    
+    <div id="status" class="test-section">
+        <h3>Status da Integração</h3>
+        <div id="integration-status">Carregando...</div>
+    </div>
+
+    <div id="tracking-tests" class="test-section">
+        <h3>Testes de Captação de Comportamentos</h3>
+        <button onclick="testClientEvent()">Testar Evento de Cliente</button>
+        <button onclick="testProductEvent()">Testar Evento de Produto</button>
+        <button onclick="testSearchEvent()">Testar Evento de Busca</button>
+        <button onclick="testWishlistEvent()">Testar Wishlist</button>
+        <button onclick="testWarnMeEvent()">Testar Warn Me</button>
+        <div id="tracking-results"></div>
+    </div>
+
+    <div id="cookies-section" class="test-section">
+        <h3>Verificação de Cookies de Tracking</h3>
+        <button onclick="checkTrackingCookies()">Verificar Cookies</button>
+        <div id="cookies-status"></div>
+    </div>
+
+    <div id="url-detection" class="test-section">
+        <h3>Detecção Automática de Páginas</h3>
+        <button onclick="simulateProductPage()">Simular Página de Produto</button>
+        <button onclick="simulateSearchPage()">Simular Página de Busca</button>
+        <div id="url-results"></div>
+    </div>
+
+    <!-- Carrega a SDK compilada (webpack) -->
+    <script src="./dist/main.49d013975f6a02a9b0ee.min.js"></script>
+    
+    <script>
+        // Configurações de teste
+        const TEST_BTG_ID = '123:456';
+        const TEST_TCS_TOKEN = 'tcs_test_12345678901234567890123456789012';
+        let testResults = [];
+
+        function logResult(test, success, message) {
+            const result = { test, success, message, timestamp: new Date() };
+            testResults.push(result);
+            console.log(`${success ? '✅' : '❌'} ${test}: ${message}`);
+            return result;
+        }
+
+        function displayStatus(elementId, content, className = '') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = content;
+            if (className) element.className = className;
+        }
+
+        // Verifica se a SDK foi carregada corretamente
+        function checkSDKIntegration() {
+            const checks = [];
+            
+            // Verifica se BtgTracking está disponível globalmente
+            if (typeof window.BtgTracking !== 'undefined') {
+                checks.push('✅ window.BtgTracking disponível');
+            } else {
+                checks.push('❌ window.BtgTracking não encontrado');
+            }
+
+            // Verifica se BtgSend está disponível globalmente
+            if (typeof window.BtgSend !== 'undefined') {
+                checks.push('✅ window.BtgSend disponível');
+            } else {
+                checks.push('❌ window.BtgSend não encontrado');
+            }
+
+            // Verifica métodos essenciais
+            if (window.BtgTracking && typeof window.BtgTracking.start === 'function') {
+                checks.push('✅ Método start() disponível');
+            } else {
+                checks.push('❌ Método start() não encontrado');
+            }
+
+            // Verifica se cookies estão sendo gerenciados
+            if (document.cookie.includes('__bid')) {
+                checks.push('✅ Cookie BID detectado');
+            } else {
+                checks.push('⚠️ Cookie BID não encontrado (normal antes da inicialização)');
+            }
+
+            displayStatus('integration-status', checks.join('<br>'));
+            return checks.filter(c => c.startsWith('✅')).length >= 3;
+        }
+
+        // Testa inicialização da SDK
+        async function initializeSDK() {
+            try {
+                if (window.BtgTracking && window.BtgTracking.start) {
+                    await window.BtgTracking.start(TEST_BTG_ID, TEST_TCS_TOKEN);
+                    logResult('Inicialização', true, 'SDK inicializada com sucesso');
+                    return true;
+                } else {
+                    logResult('Inicialização', false, 'Métodos da SDK não disponíveis');
+                    return false;
+                }
+            } catch (error) {
+                logResult('Inicialização', false, `Erro na inicialização: ${error.message}`);
+                return false;
+            }
+        }
+
+        // Testes de eventos específicos
+        function testClientEvent() {
+            try {
+                window.BtgSend(TEST_BTG_ID, 'client', [{
+                    email: 'teste@exemplo.com',
+                    phone: '11999999999'
+                }], null, null);
+                logResult('Evento Cliente', true, 'Evento de cliente enviado');
+                displayStatus('tracking-results', 'Último teste: Evento Cliente - ✅ Sucesso', 'success');
+            } catch (error) {
+                logResult('Evento Cliente', false, error.message);
+                displayStatus('tracking-results', `Último teste: Evento Cliente - ❌ ${error.message}`, 'error');
+            }
+        }
+
+        function testProductEvent() {
+            try {
+                const productData = {
+                    productId: '123',
+                    productName: 'Produto Teste',
+                    productBrand: { name: 'Marca Teste' },
+                    productCategories: [
+                        { name: 'Categoria 1' },
+                        { name: 'Categoria 2' }
+                    ],
+                    prices: {
+                        priceTables: [{ price: '99.99' }]
+                    }
+                };
+                
+                window.BtgSend(TEST_BTG_ID, 'product', productData, productData.productCategories, null);
+                logResult('Evento Produto', true, 'Evento de produto enviado');
+                displayStatus('tracking-results', 'Último teste: Evento Produto - ✅ Sucesso', 'success');
+            } catch (error) {
+                logResult('Evento Produto', false, error.message);
+                displayStatus('tracking-results', `Último teste: Evento Produto - ❌ ${error.message}`, 'error');
+            }
+        }
+
+        function testSearchEvent() {
+            try {
+                window.BtgSend(TEST_BTG_ID, 'search', [{ keyword: 'produto teste' }], null, null);
+                logResult('Evento Busca', true, 'Evento de busca enviado');
+                displayStatus('tracking-results', 'Último teste: Evento Busca - ✅ Sucesso', 'success');
+            } catch (error) {
+                logResult('Evento Busca', false, error.message);
+                displayStatus('tracking-results', `Último teste: Evento Busca - ❌ ${error.message}`, 'error');
+            }
+        }
+
+        function testWishlistEvent() {
+            try {
+                // Simula função global de wishlist
+                window.originalWishlistAddClick = window.wishlistAddClick || function() { 
+                    console.log('Wishlist original chamada'); 
+                };
+                
+                // Chama a função para testar interceptação
+                if (typeof window.wishlistAddClick === 'function') {
+                    window.wishlistAddClick();
+                }
+                
+                logResult('Wishlist', true, 'Interceptação de wishlist testada');
+                displayStatus('tracking-results', 'Último teste: Wishlist - ✅ Interceptação testada', 'success');
+            } catch (error) {
+                logResult('Wishlist', false, error.message);
+                displayStatus('tracking-results', `Último teste: Wishlist - ❌ ${error.message}`, 'error');
+            }
+        }
+
+        function testWarnMeEvent() {
+            try {
+                // Simula função global de warn me
+                window.originalBackInStockOnClick = window.backInStockOnClick || function() { 
+                    console.log('BackInStock original chamada'); 
+                };
+                
+                // Chama a função para testar interceptação
+                if (typeof window.backInStockOnClick === 'function') {
+                    window.backInStockOnClick();
+                }
+                
+                logResult('WarnMe', true, 'Interceptação de warn me testada');
+                displayStatus('tracking-results', 'Último teste: Warn Me - ✅ Interceptação testada', 'success');
+            } catch (error) {
+                logResult('WarnMe', false, error.message);
+                displayStatus('tracking-results', `Último teste: Warn Me - ❌ ${error.message}`, 'error');
+            }
+        }
+
+        function checkTrackingCookies() {
+            const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+                const [key, value] = cookie.trim().split('=');
+                acc[key] = value;
+                return acc;
+            }, {});
+
+            const trackingCookies = ['__bid', '__btgUtms', '__btgModule'];
+            const cookieStatus = trackingCookies.map(cookieName => {
+                const exists = cookies[cookieName];
+                return `${cookieName}: ${exists ? '✅ Presente' : '❌ Ausente'}`;
+            });
+
+            displayStatus('cookies-status', cookieStatus.join('<br>'));
+            logResult('Cookies', true, 'Verificação de cookies realizada');
+        }
+
+        function simulateProductPage() {
+            // Muda temporariamente a URL para simular detecção
+            const originalPath = window.location.pathname;
+            history.pushState({}, '', '/produto/teste-produto-123');
+            
+            logResult('Detecção URL', true, 'Simulação de página de produto');
+            displayStatus('url-results', 'Simulando: /produto/teste-produto-123 - ✅ URL alterada', 'success');
+            
+            setTimeout(() => {
+                history.pushState({}, '', originalPath);
+                displayStatus('url-results', 'URL restaurada para o valor original', 'warning');
+            }, 3000);
+        }
+
+        function simulateSearchPage() {
+            const originalPath = window.location.pathname;
+            history.pushState({}, '', '/busca?busca=produto-teste');
+            
+            logResult('Detecção URL', true, 'Simulação de página de busca');
+            displayStatus('url-results', 'Simulando: /busca?busca=produto-teste - ✅ URL alterada', 'success');
+            
+            setTimeout(() => {
+                history.pushState({}, '', originalPath);
+                displayStatus('url-results', 'URL restaurada para o valor original', 'warning');
+            }, 3000);
+        }
+
+        // Inicialização automática
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Iniciando testes de integração da SDK...');
+            
+            setTimeout(async () => {
+                const integrationOK = checkSDKIntegration();
+                
+                if (integrationOK) {
+                    console.log('✅ Integração básica OK, tentando inicializar...');
+                    await initializeSDK();
+                } else {
+                    console.error('❌ Problemas na integração básica');
+                }
+                
+                // Mostra resumo
+                console.log('📊 Resumo dos testes:', testResults);
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 

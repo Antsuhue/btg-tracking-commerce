@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Compatibilidade - BTG Tracking SDK</title>
+</head>
+<body>
+    <h1>Teste de Compatibilidade - BTG Tracking SDK</h1>
+    
+    <div id="output"></div>
+    
+    <!-- Incluindo o SDK adaptado -->
+    <script type="module">
+        import { BtgTrackingSDK } from './src/index.js';
+        
+        // Testa se as funções globais foram criadas
+        console.log('BtgTracking global:', window.BtgTracking);
+        console.log('BtgSend global:', window.BtgSend);
+        
+        // Testa compatibilidade com API original
+        const btgId = '123:456';
+        const tcsToken = 'tcs_example_12345678901234567890123456789012';
+        
+        // Teste 1: Inicialização usando método start
+        try {
+            console.log('Teste 1: Inicialização...');
+            await window.BtgTracking.start(btgId, tcsToken);
+            console.log('✓ Inicialização bem-sucedida');
+        } catch (error) {
+            console.error('✗ Erro na inicialização:', error.message);
+        }
+        
+        // Teste 2: Usando função BtgSend para cliente
+        try {
+            console.log('Teste 2: Enviando evento de cliente...');
+            window.BtgSend(btgId, 'client', [{
+                email: 'teste@exemplo.com',
+                phone: '11999999999'
+            }], null, null);
+            console.log('✓ Evento de cliente enviado');
+        } catch (error) {
+            console.error('✗ Erro no evento de cliente:', error.message);
+        }
+        
+        // Teste 3: Usando função BtgSend para produto
+        try {
+            console.log('Teste 3: Enviando evento de produto...');
+            window.BtgSend(btgId, 'product', {
+                productId: '123',
+                productName: 'Produto Teste',
+                productBrand: { name: 'Marca Teste' },
+                productCategories: [
+                    { name: 'Categoria 1' },
+                    { name: 'Categoria 2' },
+                    { name: 'Categoria 3' }
+                ],
+                prices: {
+                    priceTables: [{ price: '99.99' }]
+                }
+            }, [
+                { name: 'Categoria 1' },
+                { name: 'Categoria 2' },
+                { name: 'Categoria 3' }
+            ], null);
+            console.log('✓ Evento de produto enviado');
+        } catch (error) {
+            console.error('✗ Erro no evento de produto:', error.message);
+        }
+        
+        // Teste 4: Usando função BtgSend para busca
+        try {
+            console.log('Teste 4: Enviando evento de busca...');
+            window.BtgSend(btgId, 'search', [{
+                keyword: 'produto teste'
+            }], null, null);
+            console.log('✓ Evento de busca enviado');
+        } catch (error) {
+            console.error('✗ Erro no evento de busca:', error.message);
+        }
+        
+        // Teste 5: Usando função execute (API original)
+        try {
+            console.log('Teste 5: Usando método execute...');
+            window.BtgTracking.execute({
+                account: btgId,
+                event: 'client',
+                items: [{
+                    email: 'teste2@exemplo.com',
+                    phone: '11888888888'
+                }]
+            });
+            console.log('✓ Método execute funcionou');
+        } catch (error) {
+            console.error('✗ Erro no método execute:', error.message);
+        }
+        
+        // Teste 6: Verificando estado do SDK
+        try {
+            console.log('Teste 6: Verificando estado do SDK...');
+            const state = window.BtgTracking.getState();
+            console.log('Estado do SDK:', state);
+            console.log('✓ Estado obtido com sucesso');
+        } catch (error) {
+            console.error('✗ Erro ao obter estado:', error.message);
+        }
+        
+        // Exibe resultado na página
+        document.getElementById('output').innerHTML = `
+            <h2>Resultados dos Testes</h2>
+            <p>Verifique o console do navegador para ver os resultados detalhados.</p>
+            <p><strong>API Global BtgTracking:</strong> ${window.BtgTracking ? '✓ Disponível' : '✗ Não disponível'}</p>
+            <p><strong>API Global BtgSend:</strong> ${window.BtgSend ? '✓ Disponível' : '✗ Não disponível'}</p>
+            <p><strong>SDK Inicializado:</strong> ${window.BtgTracking && window.BtgTracking.getState().isInitialized ? '✓ Sim' : '✗ Não'}</p>
+        `;
+        
+    </script>
+</body>
+</html> 
